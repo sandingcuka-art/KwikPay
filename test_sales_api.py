@@ -61,6 +61,34 @@ class SalesApiTests(unittest.TestCase):
             self.assertEqual(response["payment"]["status"], "PENDING")
             mock_client.return_value.create_payment.assert_called_once_with("shop-42", 20, "ZAR")
 
+    def test_create_sale_response_persists_transaction_when_shop_id_present(self):
+        with mock.patch("sales_api.InterledgerPaymentClient") as mock_client:
+            mock_client.return_value.create_payment.return_value = {
+                "id": "pay-001",
+                "shopId": "shop-42",
+                "amount": 20,
+                "currency": "ZAR",
+                "status": "PENDING",
+            }
+
+            with mock.patch("sales_api.ReportingAPI") as mock_reporting_api:
+                response = create_sale_response({
+                    "amount": 20,
+                    "shopId": "shop-42",
+                    "supplier": 2,
+                    "salaries": 3,
+                    "maintenance": 5,
+                })
+
+                self.assertIn("payment", response)
+                mock_reporting_api.return_value.record_transaction.assert_called_once_with(
+                    shop_id="shop-42",
+                    amount=20,
+                    currency="ZAR",
+                    split=response["split"],
+                    payment_reference="pay-001",
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

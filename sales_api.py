@@ -3,6 +3,7 @@ import math
 import os
 from urllib import error, request
 
+from reporting_api import ReportingAPI
 from transaction_split import TransactionSplitter
 
 
@@ -85,12 +86,22 @@ def create_sale_response(payload):
         "split": split,
     }
 
-    # When a shop is identified, persist the sale as a payment in the external
-    # Interledger service so the downstream payment record is created immediately.
+    # When a shop is identified, persist the sale in the local reporting store
+    # and submit the payment record to the external Interledger service.
     shop_id = payload.get("shopId") or payload.get("shop_id")
     if shop_id:
         payment_client = InterledgerPaymentClient()
         currency = payload.get("currency", "ZAR")
-        response["payment"] = payment_client.create_payment(shop_id, amount, currency)
+        payment = payment_client.create_payment(shop_id, amount, currency)
+        response["payment"] = payment
+
+        reporting_api = ReportingAPI()
+        reporting_api.record_transaction(
+            shop_id=shop_id,
+            amount=amount,
+            currency=currency,
+            split=split,
+            payment_reference=payment.get("id"),
+        )
 
     return response
