@@ -11,7 +11,7 @@ class InterledgerPaymentClient:
     """Submit a payment record to the Interledger payment service."""
 
     def __init__(self, base_url=None, timeout=10):
-        self.base_url = (base_url or os.environ.get("INTERLEDGER_PAYMENT_SERVICE_URL") or "http://localhost:8080").rstrip("/")
+        self.base_url = (base_url or os.environ.get("INTERLEDGER_PAYMENT_SERVICE_URL") or "http://127.0.0.1:8081").rstrip("/")
         self.timeout = timeout
 
     def create_payment(self, shop_id, amount, currency="ZAR"):

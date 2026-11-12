@@ -83,12 +83,14 @@ class RulesEngine:
             raise ValueError("Total amount cannot be negative.")
 
         total = Decimal(str(total_amount))
+        remaining = total
         allocations = {}
         for rule in self.rules:
             exact_amount = total * (Decimal(str(rule.percent)) / Decimal("100"))
-            rounded_amount = float(exact_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-            allocations[rule.name] = rounded_amount
+            # Rounded expense allocations must never spend more than the sale.
+            rounded_amount = min(exact_amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), remaining)
+            allocations[rule.name] = float(rounded_amount)
+            remaining -= rounded_amount
 
-        remaining = float((total - sum(Decimal(str(value)) for value in allocations.values())).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
-        allocations["profit"] = remaining
+        allocations["profit"] = float(remaining.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))
         return allocations

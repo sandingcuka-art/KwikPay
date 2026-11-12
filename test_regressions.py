@@ -9,6 +9,11 @@ from transaction_split import split_transaction
 
 
 class FinancialRegressionTests(unittest.TestCase):
+    def test_rounding_never_creates_negative_profit(self):
+        result = split_transaction("0.02", supplier=33, salaries=33, maintenance=34, env={})
+        self.assertTrue(all(value >= 0 for value in result.values()))
+        self.assertEqual(sum(Decimal(str(value)) for value in result.values()), Decimal("0.02"))
+
     def test_split_allocations_are_whole_cents(self):
         result = split_transaction("0.06", env={})
 
